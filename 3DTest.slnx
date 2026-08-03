@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="3DTest/3DTest.vcxproj" Id="fce7a965-eb2f-42fb-afd5-3c82154fed2b" />
+</Solution>
