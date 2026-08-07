@@ -29,7 +29,6 @@
 // -w/--width, -h/--height, -warp/--warp. Parsed here (an app concern), then handed
 // to the Window (size) and Renderer (warp adapter).
 using namespace JLib;
-using namespace Physics2D;
 
 static void ParseCommandLine(uint32_t& width, uint32_t& height, bool& useWarp)
 {
