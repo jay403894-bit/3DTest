@@ -73,6 +73,11 @@ private:
 	static constexpr int kScoreDirectHit = 50;
 	static constexpr int kScoreGate      = 25;
 	static constexpr DirectX::XMFLOAT3 kGatePos = { 0.0f, 2.9f, 7.0f };   // on the natural mid-power arc
+	// HALF-extent of the ground, in world units. The collision box takes it directly; the visual slab
+	// doubles it, because MakeCubeMesh is a unit cube and its scale is a FULL size. Both derive from
+	// here so the drawn edge and the collidable edge can never drift apart again -- they were 30 and
+	// 50 respectively, which is why balls rolled past the visible edge on invisible floor.
+	static constexpr float kGroundHalf = 30.0f;
 
 	// Impact particles (phase 2A chain).
 	JLib::Renderer3D::ParticleEmitterHandle burstPool = 0;

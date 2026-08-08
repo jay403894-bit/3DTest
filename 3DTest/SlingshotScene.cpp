@@ -30,13 +30,39 @@ SlingshotScene::SlingshotScene(JLib::Font* font_, JLib::SoundManager* sound_, JL
 	}
 	// Physics world: floor + the target tower. (Projectiles are added per shot at runtime.)
 	physics3d.Init();
-	physics3d.AddStaticBox({ 0.0f, -1.0f, 0.0f }, { 50.0f, 0.5f, 50.0f });   // top at y = -0.5
+	// Collision floor. kGroundHalf, not a literal: the VISUAL slab in Draw() has to match this
+	// exactly, and the two APIs take different things -- AddStaticBox takes HALF-extents while
+	// XMMatrixScaling on a unit MakeCubeMesh takes the FULL size. The old pair (half 50 vs scale 60)
+	// looked like it agreed and did not: collision ran 20 units past the visible edge on every side,
+	// so a ball rolled off what looked like the edge and kept rolling on invisible floor. Deriving
+	// both from one constant is what makes that class of mismatch impossible rather than unlikely.
+	physics3d.AddStaticBox({ 0.0f, -1.0f, 0.0f }, { kGroundHalf, 0.5f, kGroundHalf });   // top at y = -0.5
 	BuildTower();
 	// Bonus gate: a SENSOR volume floating on the arc path -- shots that fly through it score without
 	// touching it (no collision response). The visual frame is drawn in Draw(); this is just the trigger.
 	gateSensor = physics3d.AddSensorBox(kGatePos, { 0.85f, 0.85f, 0.15f });
 	physics3d.SetUserData(gateSensor, kUserGate);
 	physics3d.Finalize();
+
+	r3d.EnableShadows(true);
+	// SSAO. Radius is in world units and is the real tuning knob: 0.5m is about the scale of the gaps
+	// that matter here -- column bases meeting the floor, the springing of the arches, the recessed
+	// gallery. Intensity above 1 because ambient is doing most of the lighting work indoors, so the
+	// occlusion has to be visible against it.
+	r3d.EnableSSAO(true);
+	r3d.SetSSAOParams(0.5f, 1.4f);
+	r3d.EnableBloom(true);
+	r3d.SetBloomParams(1.0f, 0.08f);
+	// Image-based lighting from a real HDR sky. When this succeeds it REPLACES the hemisphere ambient
+	// set above -- ambient then comes from the environment's actual irradiance rather than two picked
+	// colours. If the file is missing the call fails harmlessly and the hemisphere path stays, so the
+	// scene still runs for anyone who doesn't have the asset.
+	r3d.LoadEnvironment(L"textures\\citrus_orchard_puresky_2k.hdr");   // opt-in: costs a second geometry traversal into the depth map
+	// Undoes the light increase the line above causes: that HDRI's sky irradiance is ~3.0 against the
+	// ~0.45 hemisphere ambient it replaces, so IBL raises total scene light ~2.6x while the 4.0 sun
+	// stays where it was hand-picked. 1/2.6 ~= 0.38. See Renderer3D::SetExposure -- this is a lighting
+	// mismatch that predates the FP16 work, not a tonemapping artifact.
+	r3d.SetExposure(0.35f);   // matched to ACESFitted (the default curve); see Renderer3D::SetExposure
 
 	burstPool = r3d.AddBurstPool(8192);   // impact sparks (contact -> burst chain)
 }
@@ -194,8 +220,11 @@ void SlingshotScene::Draw() {
 	r3d.AddDirectionalLight({ -0.4f, -0.8f, 0.4f }, { 1.0f, 0.97f, 0.9f }, 3.0f);
 	r3d.AddPointLight({ 0.0f, 3.0f, 13.0f }, { 1.0f, 0.6f, 0.3f }, 8.0f, 12.0f);   // warm glow on the tower
 
-	// Ground slab (visual; the physics floor is invisible collision at the same height).
-	r3d.Submit(floorMesh, XMMatrixScaling(60.0f, 1.0f, 60.0f) * XMMatrixTranslation(0.0f, -1.0f, 0.0f));
+	// Ground slab. MakeCubeMesh is a UNIT cube, so the scale is the FULL size -- hence x2 against the
+	// half-extent the collision box was built from. Same source constant, so the visible edge and the
+	// edge you can actually roll off are the same edge.
+	r3d.Submit(floorMesh, XMMatrixScaling(kGroundHalf * 2.0f, 1.0f, kGroundHalf * 2.0f)
+	                      * XMMatrixTranslation(0.0f, -1.0f, 0.0f));
 
 	// Slingshot "pouch" marker at the launch origin.
 	r3d.Submit(sphereMesh, XMMatrixScaling(0.5f, 0.5f, 0.5f)

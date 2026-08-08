@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <vector>
 #include <memory>
 #include <DirectXMath.h>
@@ -8,7 +8,6 @@
 #include <ModelLoader.h>    // LoadObjMesh (teapot test)
 #include <Camera2D.h>
 #include <InputManager.h>
-#include <PhysicsSystem.h>
 #include "Physics3D.h"     // Jolt-backed 3D physics (PIMPL -- no Jolt/JPH types leak here)
 #include <SoundManager.h>
 #include <fstream>

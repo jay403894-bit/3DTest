@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
@@ -15,13 +15,14 @@
 #include <Font.h>
 #include <Camera2D.h>
 #include <InputManager.h>
-#include <PhysicsWorld.h>
-#include <SpatialGrid.h>
-#include <PhysicsSystem.h>
 #include <memory>
 #include "SceneManager.h"
+#include "Physics3D.h"   // Physics3D::InitGlobals/ShutdownGlobals -- process-wide Jolt lifecycle
 #include "StartMenuScene.h"
 #include "SlingshotScene.h"
+#include "CharacterScene.h"
+#include "ConstraintScene.h"
+#include "Physics2DScene.h"
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_win32.h"
 #include "imgui/imgui_impl_dx12.h"
@@ -29,7 +30,6 @@
 // -w/--width, -h/--height, -warp/--warp. Parsed here (an app concern), then handed
 // to the Window (size) and Renderer (warp adapter).
 using namespace JLib;
-
 static void ParseCommandLine(uint32_t& width, uint32_t& height, bool& useWarp)
 {
 	int argc = 0;
@@ -62,6 +62,11 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int)
 	JLib::TaskScheduler::Init();
 	JLib::TaskScheduler& scheduler = JLib::TaskScheduler::Instance();
 
+	// Jolt's allocator/Factory/type registry are process-wide, so the HOST owns that lifetime, not
+	// whichever scene builds a world first. Must precede the first Physics3D construction; paired with
+	// ShutdownGlobals() in the teardown block at the bottom of this function.
+	JLib::Physics3D::InitGlobals();
+
 	// 100% client-area scaling, DPI-aware non-client chrome.
 	SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
@@ -82,10 +87,15 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int)
 	RendererCore core;
 	Renderer2D   renderer;
 	core.SetRenderer2D(&renderer);
+	renderer.SetFpsOverlay({ -10.0f, -10.0f });   // bottom-right, clear of the scene HUD
 	window.SetRenderer(&core);                           // so WM_SIZE reaches Core (owns Resize/VSync)
 	core.SetVSync(true); // disable vsync by
 	core.Initialize(window.GetHandle(), width, height, useWarp);
 	renderer.Initialize(core); // builds root sig/PSO/instance buffer/SRV heap/font against core's device
+	// FPS readout to the bottom-right, out of the way of the scenes' top-left HUD text. Negative
+	// coords anchor from the far edge (and right-align), so this survives resizes; 24px rather than
+	// a tighter margin because Windows 11's rounded corners clip anything tucked right into them.
+	renderer.SetFpsOverlay({ -24.0f, -24.0f });
 
 	// --- 3D pass (boilerplate: attaches Renderer3D to Core, like SetRenderer2D above). Initialize
 	// loads the Basic3D_VS/PS .cso, so those shaders must be next to the exe (in shaders\) or this
@@ -182,8 +192,16 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int)
 	Font font;
 	bool imGuiEnabled = false;
 	font.Load(ExeRelative(L"fonts\\PixelOperator8.fnt"), ExeRelative(L"fonts\\PixelOperator8.png"), renderer);
-	// THE GAME: the static-camera slingshot (SlingshotScene). To run the RENDERER DEMO instead
-	// (helmet/PBR showcase, stress grid, CesiumMan, fountain), swap which PushScene line is commented.
+	// Pick a scene by uncommenting exactly one. (A scene-select menu is the eventual replacement for
+	// this; not worth building until there are more than a handful.)
+	//   ConstraintScene -- joints test course: swing door, double doors, motorised hatch (E), rope
+	//   CharacterScene -- character-controller test course (loads SPONZA if present); still the only
+	//                     real-geometry test, so keep it -- ConstraintScene is additive, not a replacement
+	//   SlingshotScene -- the static-camera slingshot game
+	//   StartMenuScene -- the renderer demo (helmet/PBR showcase, stress grid, CesiumMan, fountain)
+	//SceneManager::PushScene(std::make_unique<Physics2DScene>(&font, renderer, input, width, height));
+	//SceneManager::PushScene(std::make_unique<ConstraintScene>(&font, renderer, *resourceManager, r3d, input, width, height));
+	//SceneManager::PushScene(std::make_unique<CharacterScene>(&font, renderer, *resourceManager, r3d, input, width, height));
 	SceneManager::PushScene(std::make_unique<SlingshotScene>(&font, &sound, renderer, *resourceManager, r3d, input, width, height));
 	//SceneManager::PushScene(std::make_unique<StartMenuScene>(&font, imGuiEnabled, &sound, renderer, *resourceManager, r3d, input, camera, &quadMesh, &slopeUpRightMesh, &slopeUpLeftMesh, tileTexture, dustEffect, width, height, window.GetHandle()));
 	while (window.ProcessMessages() && isRunning)
@@ -301,6 +319,14 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int)
 		// the depth buffer under the in-flight 3D pass -> device-removed. Deferring it here fixes that.
 		core.ApplyPendingResize();
 	}                               // continuous render loop
+	// Same "explicit beats implicit destruction order" rule as core.Cleanup() below, one level up:
+	// SceneManager::scenes is a STATIC stack, so without this the scenes outlive wWinMain and are
+	// destroyed during static destruction -- after renderer/core/sound/font are gone (they hold
+	// references to all four) and after ShutdownGlobals() below, which would leave every scene's
+	// ~Physics3D reaching into a deleted Jolt Factory. Destroy them here, while everything they
+	// borrow is still alive, and the Jolt globals then have no live instance blocking teardown.
+	SceneManager::Clear();
+	JLib::Physics3D::ShutdownGlobals();
 	// MUST be explicit, here, before renderer (Renderer2D) goes out of scope -- local
 	// destruction order is REVERSE of declaration order, so renderer destructs BEFORE core
 	// does. Relying on ~RendererCore() alone means Cleanup()'s GPU-idle Flush() would run
@@ -317,3 +343,4 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int)
 	CoUninitialize();
 	return 0;
 }
+
