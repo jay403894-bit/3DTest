@@ -1,0 +1,9 @@
+do we still want to freeze frame video when window focus is lost defensively now that we know it was the compute queue causing the crash earlier? right now when you click away it stops rendering and freeze frames until you refocus
+
+
+
+or is that desired behavior? 
+
+
+
+just wondering

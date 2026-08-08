@@ -24,3 +24,26 @@ SOUNDS by Brackeys, Asbjørn Thirslund
 MUSIC by Brackeys, Sofia Thirslund
 
 FONTS by Jayvee Enaguas - HarvettFox96 - (https://www.dafont.com/pixel-operator.font?l[]=10&l[]=1)
+
+--------------------------------------------------------------------------
+ADDITIONAL ASSETS (not part of the Brackeys CC0 pack above)
+--------------------------------------------------------------------------
+
+sound\neocrey - Jump to win.mp3          [USED -- slingshot scene background music]
+    Artist:  neocrey
+    Source:  *** TODO: fill in origin URL ***
+    License: *** TODO: confirm and state the exact license ***
+    NOTE: named-artist music track. Its attribution must be retained here in any redistribution,
+    and redistribution rights must be confirmed before this repository is published publicly.
+
+sound\bounce_light_3.flac                [USED -- impact sound]
+    Source:  *** TODO: fill in origin + license ***
+
+sound\qubodup-cfork-ccby3-jump.flac      [present in this folder]
+    Author:  qubodup (Iwan Gabovitch)
+    License: Creative Commons Attribution 3.0 (CC-BY 3.0)
+             https://creativecommons.org/licenses/by/3.0/
+    NOTE: CC-BY REQUIRES this attribution to be retained in any redistribution.
+
+sound\Frozen In Time (Chiptune).mp3      [present in this folder]
+    Source:  *** TODO: fill in origin + license ***
