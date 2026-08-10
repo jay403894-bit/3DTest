@@ -48,6 +48,12 @@ ConstraintScene::ConstraintScene(JLib::Font* font_, JLib::Renderer2D& r2d_, JLib
 	// (a door against its frame, rope links touching) are centiMeters rather than the half-Meter
 	// column bases that scene was tuned for.
 	r3d.SetSSAOParams(0.3f, 1.3f);
+	// SSGI: one bounce of indirect light. radius 2.0 world units is about the scale over which
+	// bounce actually matters here (a lamp lighting the floor beneath it, a door tinting its frame).
+	// maxLuma 8 clamps each sample -- the emissive lamps sit at 14, so without it a single lamp texel
+	// would dominate the 16-sample average and sparkle as it moves sub-pixel.
+	r3d.EnableSSGI(true);
+	r3d.SetSSGIParams(2.0f, 1.0f, 8.0f);
 	// Threshold 3.0, not 1.0. These scenes sit around 2-3 linear radiance BEFORE exposure, and the
 	// bloom threshold is applied to raw radiance -- so 1.0 would catch ordinary lit walls and read
 	// as a haze over the whole frame rather than as light around bright things. 3.0 puts the cut
@@ -286,6 +292,7 @@ void ConstraintScene::HandleInput(float dt) {
 	// and rebuilding to compare loses the exact camera angle that made you ask.
 	if (input->IsKeyPressed('B')) r3d.EnableBloom(!r3d.IsBloomEnabled());
 	if (input->IsKeyPressed('F')) r3d.EnableFXAA(!r3d.IsFXAAEnabled());
+	if (input->IsKeyPressed('G')) r3d.EnableSSGI(!r3d.IsSSGIEnabled());
 
 	if (input->IsKeyPressed(VK_OEM_4)) r3d.SetExposure(r3d.GetExposure() * 0.8f);   // '['
 	if (input->IsKeyPressed(VK_OEM_6)) r3d.SetExposure(r3d.GetExposure() * 1.25f);  // ']'
@@ -402,11 +409,18 @@ void ConstraintScene::Draw() {
 
 	// Tonemap readout. Reinhard @ 1.00 == the pre-FP16 look, so it is the reference to compare against.
 	static const char* kToneNames[] = { "None(clip)", "Reinhard", "ACES", "Uchimura", "ACES(fitted)" };
+	// TWO lines. One was overflowing the window width, so the toggle STATES -- the entire reason the
+	// readout exists -- sat off the right edge, and a working toggle was indistinguishable from a
+	// dead key. A status line that can be truncated is worse than none, because it is trusted.
 	char tone[160];
-	sprintf_s(tone, "tonemap %s   exposure %.2f   bloom %s   fxaa %s   [T curve, [ / ] exp, B bloom, F fxaa]",
+	sprintf_s(tone, "tonemap %s   exposure %.2f   bloom %s   fxaa %s   ssgi %s",
 	          kToneNames[(unsigned)r3d.GetTonemapper() % (unsigned)_countof(kToneNames)],
-	          r3d.GetExposure(), r3d.IsBloomEnabled() ? "ON" : "off", r3d.IsFXAAEnabled() ? "ON" : "off");
+	          r3d.GetExposure(), r3d.IsBloomEnabled() ? "ON" : "off",
+	          r3d.IsFXAAEnabled() ? "ON" : "off", r3d.IsSSGIEnabled() ? "ON" : "off");
 	r2d.SubmitText(*font, 10.0f, 58.0f, tone, 1.0f, JLib::Colors::Gray);
+	r2d.SubmitText(*font, 10.0f, 82.0f,
+	               "T curve   [ / ] exposure   B bloom   F fxaa   G ssgi",
+	               0.85f, JLib::Colors::Gray);
 
 	// WHERE THE FRAME WENT, in milliseconds. FPS is nonlinear and flatters the top end -- 900 to 600
 	// fps sounds catastrophic and is 0.55ms, while 60 to 30 is 16ms -- so ms against a 16.6ms budget
@@ -416,12 +430,13 @@ void ConstraintScene::Draw() {
 	char perf[224];
 	const double record = r3d.GetLastRecordMs();
 	const double rest   = frameMs - physicsMs - record;
+	// Moved down: the two-line tonemap readout above now occupies y=82.
 	sprintf_s(perf, "frame %.2f ms (%.0f fps)   physics %.2f   record %.2f   rest %.2f   "
 	                "draws %zu  instances %zu",
 	          frameMs, frameMs > 0.0 ? 1000.0 / frameMs : 0.0,
 	          physicsMs, record, rest > 0.0 ? rest : 0.0,
 	          r3d.GetLastDrawCallCount(), r3d.GetLastInstanceCount());
-	r2d.SubmitText(*font, 10.0f, 82.0f, perf, 0.85f, JLib::Colors::Yellow);
+	r2d.SubmitText(*font, 10.0f, 106.0f, perf, 0.85f, JLib::Colors::Yellow);
 }
 
 

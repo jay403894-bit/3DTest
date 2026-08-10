@@ -40,6 +40,31 @@ CharacterScene::CharacterScene(JLib::Font* font_, JLib::Renderer2D& r2d_, JLib::
 	r3d.SetSSAOParams(0.5f, 1.4f);
 	r3d.EnableBloom(true);
 	r3d.SetBloomParams(1.0f, 0.08f); 
+	r3d.EnableSSGI(true);
+	// INTENSITY 1.5 IS NOT AN ARBITRARY FUDGE -- it stands in for the bounces this technique cannot
+	// do. SSGI computes ONE bounce; a converged reference sums an infinite series, which for a room
+	// of average albedo rho totals bounce1 / (1 - rho). At rho = 0.73 that factor is 3.7, so anything
+	// up to about 3.7x is defensible as replacing the missing terms rather than inventing light.
+	// 1.5 is deliberately conservative: scaling the single bounce also scales its noise and its
+	// screen-space errors by exactly the same amount.
+	//
+	// maxLuma has to rise with the light. The panel is now 90, so the old 8.0 clamp would have
+	// rejected the single brightest surface in the room from contributing any bounce at all.
+	// maxLuma 4, NOT 40. I raised it to 40 reasoning "the panel is 90, don't reject the brightest
+	// surface in the room" -- which is exactly backwards. The clamp is a VARIANCE control, and the
+	// light panel is the single worst offender: a ray that happens to hit it returns 40 while its
+	// neighbour returns 0, so with 6 rays the mean swings 0 <-> 6.7 between adjacent pixels. Expected
+	// mean radiance here is about 1-3, so one sample was worth ~3x the entire answer. That is the
+	// salt-and-pepper static. Clamping low says "gather BOUNCE, not direct light from visible
+	// emitters" -- the direct lighting already handles the panel, and it does so without noise.
+	r3d.SetSSGIParams(3.0f, 1.5f, 4.0f);
+	// 12 steps x 12 rays = 144 depth taps per pixel. RAYS matter more than steps for noise: variance
+	// falls as 1/rays, while extra steps only help rays find hits they were stepping past. Trading
+	// 16x6 for 12x12 halves the noise at a similar cost. thickness 0.25 suits a 2m room -- large
+	// enough that a ray does not tunnel through a 0.6m block, small enough that passing behind one is
+	// not mistaken for hitting it.
+	r3d.SetSSGIMarch(12, 12, 0.25f);
+
 	// Image-based lighting from a real HDR sky. When this succeeds it REPLACES the hemisphere ambient
 	// set above -- ambient then comes from the environment's actual irradiance rather than two picked
 	// colours. If the file is missing the call fails harmlessly and the hemisphere path stays, so the

@@ -22,6 +22,7 @@
 #include "SlingshotScene.h"
 #include "CharacterScene.h"
 #include "ConstraintScene.h"
+#include "CornellScene.h"
 #include "Physics2DScene.h"
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_win32.h"
@@ -200,6 +201,8 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int)
 	//   SlingshotScene -- the static-camera slingshot game
 	//   StartMenuScene -- the renderer demo (helmet/PBR showcase, stress grid, CesiumMan, fountain)
 	//SceneManager::PushScene(std::make_unique<Physics2DScene>(&font, renderer, input, width, height));
+	// CornellScene -- the GI reference scene. Press G to A/B the bounce against a white wall.
+	//SceneManager::PushScene(std::make_unique<CornellScene>(&font, renderer, *resourceManager, r3d, input, width, height));
 	//SceneManager::PushScene(std::make_unique<ConstraintScene>(&font, renderer, *resourceManager, r3d, input, width, height));
 	//SceneManager::PushScene(std::make_unique<CharacterScene>(&font, renderer, *resourceManager, r3d, input, width, height));
 	SceneManager::PushScene(std::make_unique<SlingshotScene>(&font, &sound, renderer, *resourceManager, r3d, input, width, height));

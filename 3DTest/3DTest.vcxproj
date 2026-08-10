@@ -22,6 +22,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="CharacterScene.cpp" />
+    <ClCompile Include="CornellScene.cpp" />
     <ClCompile Include="ConstraintScene.cpp" />
     <ClCompile Include="Physics2DScene.cpp" />
     <ClCompile Include="SlingshotScene.cpp" />
@@ -30,6 +31,7 @@
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="CharacterScene.h" />
+    <ClInclude Include="CornellScene.h" />
     <ClInclude Include="ConstraintScene.h" />
     <ClInclude Include="Physics2DScene.h" />
     <ClInclude Include="SlingshotScene.h" />
@@ -76,19 +78,19 @@
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\..\..\..\..\JLib\UseJLib.props" />
+    <Import Project="$(MSBuildProjectDirectory)\FindJLib.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\..\..\..\..\JLib\UseJLib.props" />
+    <Import Project="$(MSBuildProjectDirectory)\FindJLib.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\..\..\..\..\JLib\UseJLib.props" />
+    <Import Project="$(MSBuildProjectDirectory)\FindJLib.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\..\..\..\..\JLib\UseJLib.props" />
+    <Import Project="$(MSBuildProjectDirectory)\FindJLib.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
